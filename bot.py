@@ -5,19 +5,9 @@ from queue import Queue
 from typing import Any, Dict
 
 from telegram import Bot, Update
-from telegram.ext import CommandHandler
-from telegram.ext import Updater, Dispatcher, CallbackContext
+from telegram.ext import Dispatcher, Updater
 
-
-def start_cmd(update: Update, _context: CallbackContext) -> None:
-    """ Команда start """
-    user = update.effective_user
-    update.message.reply_text(f"Hello {user.name}")
-
-
-def register_handlers(dispatcher: Dispatcher) -> None:
-    """ Регистрация """
-    dispatcher.add_handler(CommandHandler('start', start_cmd))
+from handlers import register_handlers
 
 
 def main(event: Dict[str, Any] = None, context: dict = None) -> Dict[str, Any]:
