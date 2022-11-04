@@ -1,9 +1,10 @@
 """ Модели данных """
+import json
 import os
-# from csv import reader
-from typing import Any, List
+from typing import Any, Dict
 
 import ydb
+from ydb.iam import ServiceAccountCredentials
 from pydantic import BaseModel
 
 
@@ -17,12 +18,13 @@ def query_db(query: str) -> (Any | None):
                         .with_operation_timeout(2)
         )
 
+    credentials = ServiceAccountCredentials.from_file(
+        os.getenv("SA_KEY_FILE")
+    )
     driver = ydb.Driver(
         endpoint=os.getenv('YDB_ENDPOINT'),
         database=os.getenv('YDB_DATABASE'),
-        credentials=ydb.AcccessTokenCredentials(
-            os.getenv('YDB_CREDENTIALS')
-        )
+        credentials=credentials,
     )
 
     with driver:
@@ -30,46 +32,25 @@ def query_db(query: str) -> (Any | None):
         with ydb.SessionPool(driver) as pool:
             result = pool.retry_operation_sync(exec_query)
 
-    return result
+    return result[0].rows
 
 
 class User(BaseModel):
     """ Пользователь """
-    telegram_id: str = ""  # логин в Telegram
-    telegram_num: str = ""  # телефона в Telegram
-    name: str = ""  # обращение
+    telegram_username: str = ""  # логин в Telegram
+    data: Dict[str, Any] = {}  # дополнительные данные
     full_name: str = ""  # полное имя пользователя
     is_admin: bool = False  # признак администратора
-    member_of: List[str] = []  # входит в группы
-    manage_on: List[str] = []  # управляет группами
-    comment: str = ""  # комментарий
+    name: str = ""  # обращение
+    telegram_number: str = ""  # телефона в Telegram
 
     @staticmethod
-    def get_user(telegram_id) -> ('User' | None):
-        condition = f"WHERE telegram_id=`{telegram_id}`"
-        users = query_db(f"SELECT * FROM users {condition}")
-        print('DEBUG:', users)
+    def get_by_username(telegram_username: str):
+        users = query_db(f"""
+            SELECT * FROM `users` 
+            WHERE `telegram_username` == \"{telegram_username}\";
+        """)
         if users:
-            return User(**users[0])
-        return None
-
-    # @staticmethod
-    # def get_users() -> List['User']:
-    #     """ Получить список пользователей """
-    #     users = []
-    #     with open('users.csv', encoding='utf-8') as csvfile:
-    #         csv_reader = reader(csvfile, dialect='excel')
-    #         next(csv_reader)
-    #         for row in csv_reader:
-    #             user = User(
-    #                 telegram_id=row[0],
-    #                 telegram_num=row[1],
-    #                 full_name=row[2],
-    #                 name=row[3],
-    #                 is_admin=row[4] == 'TRUE',
-    #                 member_of=row[5].split(),
-    #                 manage_on=row[6].split(),
-    #                 comment=row[7],
-    #             )
-    #             users.append(user)
-    #     return users
+            user = users[0]
+            user['data'] = json.loads(user['data'])
+            return User(**user)

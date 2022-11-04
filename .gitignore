@@ -2,6 +2,9 @@
 .idea/
 .vscode/
 
+# Data
+*.json
+
 # Compilated
 *.pyc
 

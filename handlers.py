@@ -11,14 +11,14 @@ from models import User
 def register_handlers(dispatcher: Dispatcher) -> None:
     """ Регистрация """
     messages = Filters.text & ~Filters.command
-    dispatcher.add_handler(MessageHandler(messages, start_cmd))
-    dispatcher.add_handler(CommandHandler('start', find_note_by_msg))
+    dispatcher.add_handler(CommandHandler('start', start_cmd))
+    dispatcher.add_handler(MessageHandler(messages, find_note_by_msg))
 
 
 def start_cmd(update: Update, _context: CallbackContext) -> None:
     """ Команда start """
     user = update.effective_user
-    db_user = User.get_user(user.id)
+    db_user = User.get_by_username(user.username)
     if db_user:
         update.message.reply_text(f"Hello {user.name}")
     else:
