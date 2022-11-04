@@ -5,6 +5,8 @@ from telegram.ext import Dispatcher
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler
 from telegram.ext.filters import Filters
 
+from models import User
+
 
 def register_handlers(dispatcher: Dispatcher) -> None:
     """ Регистрация """
@@ -16,7 +18,11 @@ def register_handlers(dispatcher: Dispatcher) -> None:
 def start_cmd(update: Update, _context: CallbackContext) -> None:
     """ Команда start """
     user = update.effective_user
-    update.message.reply_text(f"Hello {user.name}")
+    db_user = User.get_user(user.id)
+    if db_user:
+        update.message.reply_text(f"Hello {user.name}")
+    else:
+        update.message.reply_text("Who are you?")
 
 
 def find_note_by_msg(update: Update, _context: CallbackContext) -> None:

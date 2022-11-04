@@ -1,2 +1,4 @@
 flake8==5.0.4
+pydantic==1.10.2
 python-telegram-bot==13.14
+ydb==2.10.0
