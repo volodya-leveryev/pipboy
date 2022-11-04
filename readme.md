@@ -84,6 +84,19 @@
 
 Отслеженивание выполнения квот???
 
+## Тестовый запуск
+
+* Создать и активировать виртуальное окружение
+* Установить библиотеки `pip install -r requirements.txt`
+* Отключить Yandex Cloud Function чтобы избежать конфликта
+* Найти в базе данных YDB параметры соединения и задать переменные окружения
+  - `YDB_ENDPOINT` (вида grpcs://ydb.serverless.yandexcloud.net:2135)
+  - `YDB_DATABASE` (вида /<id зоны доступности>/<id облака>/<id базы данных>)
+* Задать переменную окружения `BOT_TOKEN`
+* Войти в сервисный аккаунт и создать авторизованный ключ
+* Задать переменную окружения `SA_KEY_FILE` и указать путь к этому ключу
+* Запустить `python bot.py`
+
 ## Литература
 
 * [Пример на Telegraf в Яндекс Сloud Functions](https://cloud.yandex.ru/docs/functions/tutorials/telegram-bot-serverless)
@@ -94,3 +107,7 @@
 * [JavaScript (Telegraf)](https://telegrafjs.org/)
 * [Python Telegram Bot](https://docs.python-telegram-bot.org/en/v20.0a4/)
 * [pyTelegramBotAPI (Telebot)](https://pytba.readthedocs.io/en/latest/index.html)
+
+**API**
+
+* [Telegram API](https://telegram-bot-sdk.readme.io/reference/)

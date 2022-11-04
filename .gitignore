@@ -8,5 +8,9 @@
 # Compilated
 *.pyc
 
+# Scripts
+*.bat
+*.sh
+
 # Dependencies
 venv/

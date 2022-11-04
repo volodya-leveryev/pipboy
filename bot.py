@@ -1,4 +1,6 @@
 """ Telegram-бот "Помощник куратора" """
+
+import json
 import os
 from queue import Queue
 from typing import Any, Dict
@@ -21,7 +23,8 @@ def lambda_handler(event: obj_type, _context: obj_type) -> obj_type:
     bot = Bot(token=get_token())
     dispatcher = Dispatcher(bot, Queue())
     register_handlers(dispatcher)
-    update = Update.de_json(event['body'], bot)
+    message = json.loads(event['body'])
+    update = Update.de_json(message, bot)
     dispatcher.process_update(update)
     return {'statusCode': 200}
 
