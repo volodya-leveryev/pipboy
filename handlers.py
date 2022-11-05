@@ -20,9 +20,9 @@ def start_cmd(update: Update, _context: CallbackContext) -> None:
     user = update.effective_user
     db_user = User.get_by_username(user.username)
     if db_user:
-        update.message.reply_text(f"Hello {user.name}")
+        update.message.reply_text(f"Здравствуйте, {user.name}!")
     else:
-        update.message.reply_text("Who are you?")
+        update.message.reply_text("Извините, но мы не знакомы.")
 
 
 def find_note_by_msg(update: Update, _context: CallbackContext) -> None:

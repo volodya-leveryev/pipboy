@@ -3,14 +3,12 @@
 import json
 import os
 from queue import Queue
-from typing import Any, Dict
 
 from telegram import Bot, Update
 from telegram.ext import Dispatcher, Updater
 
 from handlers import register_handlers
-
-obj_type = Dict[str, Any]
+from models import obj_type
 
 
 def get_token() -> str:
@@ -19,7 +17,7 @@ def get_token() -> str:
 
 
 def lambda_handler(event: obj_type, _context: obj_type) -> obj_type:
-    """ Точка входа в AWS Lambda (Yandex Cloud Functions) """
+    """ Точка входа в Yandex Cloud Functions (AWS Lambda) """
     bot = Bot(token=get_token())
     dispatcher = Dispatcher(bot, Queue())
     register_handlers(dispatcher)
@@ -34,7 +32,11 @@ def main() -> None:
     updater = Updater(token=get_token())
     register_handlers(updater.dispatcher)
     updater.start_polling()
-    updater.idle()
+    try:
+        updater.idle()
+    except KeyboardInterrupt:
+        # TODO: остановить работу драйвера
+        pass
 
 
 if __name__ == '__main__':
