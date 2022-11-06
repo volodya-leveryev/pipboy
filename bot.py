@@ -32,11 +32,7 @@ def main() -> None:
     updater = Updater(token=get_token())
     register_handlers(updater.dispatcher)
     updater.start_polling()
-    try:
-        updater.idle()
-    except KeyboardInterrupt:
-        # TODO: остановить работу драйвера
-        pass
+    updater.idle()
 
 
 if __name__ == '__main__':
