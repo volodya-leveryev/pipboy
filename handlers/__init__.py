@@ -10,6 +10,8 @@ from data.model_user import User
 
 
 def register_handlers(dispatcher: Dispatcher) -> None:
+    """ Регистрируем обработчики """
+
     # Начало общения с пользователем
     dispatcher.add_handler(CommandHandler("start", start))
     dispatcher.add_handler(CBQ(main_menu, pattern="^main_menu$"))
@@ -36,7 +38,12 @@ def show_main_menu(prev: Update | CallbackQuery) -> None:
 
 def start(update: Update, _context: CallbackContext) -> None:
     """Команда start"""
-    user = User.get(update.effective_user.id)
+    user = update.effective_user
+    if user is None:
+        update.message.reply_text("Извините, но мы не знакомы.")
+        return
+
+    user = User.get(user.id)
     if user:
         update.message.reply_text(f"Здравствуйте, {user.name}!")
         show_main_menu(update)
@@ -50,7 +57,7 @@ def main_menu(update: Update, _context: CallbackContext):
     show_main_menu(query)
 
 
-def error(update: Update, context: CallbackContext) -> None:
+def error(update, context: CallbackContext) -> None:
     """ Обработчик ошибки """
     print("Update:", update)
     print("Error:", context.error)

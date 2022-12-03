@@ -1,6 +1,6 @@
 import os
 from contextlib import contextmanager
-from typing import Any, Dict, List
+from typing import Any, Dict, Iterator, List
 
 from ydb import Driver, SerializableReadWrite, Session, SessionPool, convert
 from ydb.iam import ServiceAccountCredentials
@@ -11,7 +11,7 @@ DictObject = Dict[str, Any]
 
 
 @contextmanager
-def connection_to_database() -> None:
+def connection() -> Iterator[None]:
     """Подключение к базе данных"""
     global _session_pool
 
@@ -23,6 +23,7 @@ def connection_to_database() -> None:
     with Driver(endpoint=os.getenv("YDB_ENDPOINT"),
                 database=os.getenv("YDB_DATABASE"),
                 credentials=credentials) as driver:
+
         driver.wait(timeout=5, fail_fast=True)
 
         with SessionPool(driver) as session_pool:
@@ -30,7 +31,7 @@ def connection_to_database() -> None:
             yield
 
 
-def exec_query(query: str, params: DictObject = None) -> List[DictObject]:
+def exec_query(query: str, params: DictObject = {}) -> List[DictObject]:
     """Выполнить запрос к базе данных"""
     global _session_pool
 
@@ -45,5 +46,7 @@ def exec_query(query: str, params: DictObject = None) -> List[DictObject]:
         return transaction.execute(query, params, commit_tx=True)
 
     result = _session_pool.retry_operation_sync(callee)
-    if result:
-        return result[0].rows
+    if result is None:
+        raise Exception("Cannot execute query to database")
+
+    return result[0].rows

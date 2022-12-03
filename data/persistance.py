@@ -1,9 +1,9 @@
 import json
 from collections import defaultdict
-from typing import DefaultDict, Optional, Tuple
+from typing import Optional, Tuple
 
 from telegram.ext import BasePersistence
-from telegram.ext.utils.types import UD, ConversationDict
+from telegram.ext.utils.types import ConversationDict
 
 from data.base import exec_query
 
@@ -19,7 +19,7 @@ class YdbPersistence(BasePersistence):
             store_callback_data=False,
         )
 
-    def get_user_data(self) -> DefaultDict[int, UD]:
+    def get_user_data(self) -> dict[int, dict]:
         """Прочитать данные диалогов с пользователями"""
         query = """
             SELECT user_id, data FROM user_data;
@@ -29,7 +29,7 @@ class YdbPersistence(BasePersistence):
             result[row["user_id"]] = json.loads(row["data"])
         return result
 
-    def update_user_data(self, user_id: int, data: UD) -> None:
+    def update_user_data(self, user_id: int, data: dict) -> None:
         """Обновить данные диалога с пользователем"""
         if data:
             # Обновить разговор
@@ -54,6 +54,18 @@ class YdbPersistence(BasePersistence):
                 "$user_id": user_id,
             }
             exec_query(query, params)
+
+    def get_chat_data(self) -> dict[int, dict]:
+        return {}
+
+    def update_chat_data(self, chat_id: int, data: dict) -> None:
+        pass
+
+    def get_bot_data(self) -> dict:
+        return {}
+
+    def update_bot_data(self, data: dict) -> None:
+        pass
 
     def get_conversations(self, name: str) -> ConversationDict:
         """Прочитать состояние разговора из базы данных"""
