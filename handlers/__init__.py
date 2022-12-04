@@ -5,7 +5,7 @@ from telegram.ext import CallbackContext
 from telegram.ext import CallbackQueryHandler as CBQHandler
 from telegram.ext import CommandHandler, Dispatcher
 
-from data.model_user import User
+from models.user import User
 
 
 def register_handlers(disp: Dispatcher) -> None:
