@@ -4,7 +4,7 @@ from typing import Optional, Tuple
 from telegram.ext import BasePersistence
 from telegram.ext.utils.types import ConversationDict
 
-from data.base import exec_query
+from database import exec_query
 
 
 class YdbPersistence(BasePersistence):

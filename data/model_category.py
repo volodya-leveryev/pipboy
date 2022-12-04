@@ -2,7 +2,7 @@ from typing import List
 
 from pydantic import BaseModel
 
-from data.base import exec_query
+from database import exec_query
 
 
 class Category(BaseModel):

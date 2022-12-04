@@ -4,7 +4,7 @@ from typing import List
 from pydantic import BaseModel
 from pymystem3 import Mystem
 
-from data.base import DictObject, exec_query
+from database import DictObject, exec_query
 
 
 def get_keywords(text: str) -> List[str]:

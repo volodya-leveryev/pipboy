@@ -2,7 +2,7 @@ from enum import Enum, auto
 
 from pydantic import BaseModel
 
-from data.base import exec_query
+from database import exec_query
 
 
 class Role(Enum):

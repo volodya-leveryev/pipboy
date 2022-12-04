@@ -13,7 +13,7 @@ def register_handlers(disp: Dispatcher) -> None:
 
     # Начало общения с пользователем
     disp.add_handler(CommandHandler("start", start_cmd))
-    disp.add_handler(CBQHandler(main_menu_cbq))
+    disp.add_handler(CBQHandler(main_menu_cbq, pattern="^main_menu$"))
 
     # Объявления
     # notices.register(dispatcher)

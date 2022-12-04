@@ -7,9 +7,9 @@ from queue import Queue
 from telegram import Bot, Update
 from telegram.ext import Dispatcher, Updater
 
-from data.base import DictObject, connection
-from data.persistance import YdbPersistence
+from database import DictObject, connection
 from handlers import register_handlers
+from persistance import YdbPersistence
 
 
 def get_token() -> str:
