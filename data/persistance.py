@@ -1,5 +1,4 @@
 import json
-from collections import defaultdict
 from typing import Optional, Tuple
 
 from telegram.ext import BasePersistence
@@ -24,13 +23,15 @@ class YdbPersistence(BasePersistence):
         query = """
             SELECT user_id, data FROM user_data;
         """
-        result = defaultdict(dict)
+        result = {}
         for row in exec_query(query):
-            result[row["user_id"]] = json.loads(row["data"])
+            user_id = row["user_id"]
+            result[user_id] = json.loads(row["data"])
         return result
 
     def update_user_data(self, user_id: int, data: dict) -> None:
         """Обновить данные диалога с пользователем"""
+
         if data:
             # Обновить разговор
             query = """
@@ -44,15 +45,15 @@ class YdbPersistence(BasePersistence):
                 "$data": json.dumps(data),
             }
             exec_query(query, params)
+
         else:
             # Удалить разговор
             query = """
                 DECLARE $user_id AS Uint64;
-                DELETE FROM user_data WHERE user_id == $user_id
+                DELETE FROM user_data
+                WHERE user_id == $user_id;
             """
-            params = {
-                "$user_id": user_id,
-            }
+            params = {"$user_id": user_id}
             exec_query(query, params)
 
     def get_chat_data(self) -> dict[int, dict]:
@@ -69,21 +70,26 @@ class YdbPersistence(BasePersistence):
 
     def get_conversations(self, name: str) -> ConversationDict:
         """Прочитать состояние разговора из базы данных"""
+
         query = """
             DECLARE $name AS String;
-            SELECT key, state FROM conversations WHERE name == $name;
+            SELECT key, state FROM conversations
+            WHERE name == $name;
         """
         params = {"$name": name.encode()}
         result = {}
         for row in exec_query(query, params):
-            result[tuple(json.loads(row["key"]))] = row["state"]
+            conv_key = tuple(json.loads(row["key"]))
+            result[conv_key] = row["state"]
         return result
 
-    def update_conversation(self, name: str, key: Tuple[int, ...],
-                            new_state: Optional[object]) -> None:
-        """Обновить или удалить разговор в базе данных"""
+    def update_conversation(
+        self, name: str, key: Tuple[int, ...], new_state: Optional[object]
+    ) -> None:
+        """Обновить или удалить разговоров в базе данных"""
+
         if new_state:
-            # Обновить разговор
+            # Обновить состояние разговора
             query = """
                 DECLARE $name AS String;
                 DECLARE $key AS String;
@@ -97,12 +103,14 @@ class YdbPersistence(BasePersistence):
                 "$state": new_state,
             }
             exec_query(query, params)
+
         else:
-            # Удалить разговор
+            # Удалить состояние разговора
             query = """
                 DECLARE $name AS String;
                 DECLARE $key AS String;
-                DELETE FROM conversations WHERE name == $name AND key == $key
+                DELETE FROM conversations
+                WHERE name == $name AND key == $key;
             """
             params = {
                 "$name": name.encode(),

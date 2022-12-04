@@ -20,9 +20,12 @@ def connection() -> Iterator[None]:
     if filename:
         credentials = ServiceAccountCredentials.from_file(filename)
 
-    with Driver(endpoint=os.getenv("YDB_ENDPOINT"),
-                database=os.getenv("YDB_DATABASE"),
-                credentials=credentials) as driver:
+    params = {
+        "endpoint": os.getenv("YDB_ENDPOINT"),
+        "database": os.getenv("YDB_DATABASE"),
+        "credentials": credentials,
+    }
+    with Driver(**params) as driver:
 
         driver.wait(timeout=5, fail_fast=True)
 

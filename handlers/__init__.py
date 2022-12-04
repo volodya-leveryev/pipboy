@@ -1,64 +1,65 @@
 from telegram import CallbackQuery
 from telegram import InlineKeyboardButton as btn
-from telegram import InlineKeyboardMarkup as kbd
-from telegram import Update
+from telegram import InlineKeyboardMarkup, Update
 from telegram.ext import CallbackContext
-from telegram.ext import CallbackQueryHandler as CBQ
+from telegram.ext import CallbackQueryHandler as CBQHandler
 from telegram.ext import CommandHandler, Dispatcher
 
 from data.model_user import User
 
 
-def register_handlers(dispatcher: Dispatcher) -> None:
-    """ Регистрируем обработчики """
+def register_handlers(disp: Dispatcher) -> None:
+    """Регистрируем обработчики"""
 
     # Начало общения с пользователем
-    dispatcher.add_handler(CommandHandler("start", start))
-    dispatcher.add_handler(CBQ(main_menu, pattern="^main_menu$"))
+    disp.add_handler(CommandHandler("start", start_cmd))
+    disp.add_handler(CBQHandler(main_menu_cbq))
 
     # Объявления
     # notices.register(dispatcher)
 
     # Обработка ошибки
-    dispatcher.add_error_handler(error)
+    disp.add_error_handler(error)
 
 
 def show_main_menu(prev: Update | CallbackQuery) -> None:
+    """Показать главное меню"""
+
     msg = "Главное меню:"
-    main_menu = kbd([[
-        btn("Поиск объявления", callback_data="notice/search"),
-    ], [
-        btn("Категории объявлений", callback_data="category/list"),
-    ]])
+    row1 = [btn("Поиск объявления", callback_data="notice/search")]
+    row2 = [btn("Категории объявлений", callback_data="category/list")]
+    menu = InlineKeyboardMarkup([row1, row2])
+
     if isinstance(prev, Update):
-        prev.message.reply_text(msg, reply_markup=main_menu)
+        prev.message.reply_text(msg, reply_markup=menu)
     elif isinstance(prev, CallbackQuery):
-        prev.edit_message_text(msg, reply_markup=main_menu)
+        prev.edit_message_text(msg, reply_markup=menu)
 
 
-def start(update: Update, _context: CallbackContext) -> None:
+def start_cmd(update: Update, context: CallbackContext) -> None:
     """Команда start"""
-    user = update.effective_user
-    if user is None:
-        update.message.reply_text("Извините, но мы не знакомы.")
-        return
-
-    user = User.get(user.id)
-    if user:
+    try:
+        user = update.effective_user
+        if not user:
+            raise RuntimeError
+        user = User.get(user.id)
+        if not user:
+            raise RuntimeError
         update.message.reply_text(f"Здравствуйте, {user.name}!")
         show_main_menu(update)
-    else:
+    except RuntimeError:
         update.message.reply_text("Извините, но мы не знакомы.")
 
 
-def main_menu(update: Update, _context: CallbackContext):
+def main_menu_cbq(update: Update, context: CallbackContext):
+    """Показать главное меню"""
     query = update.callback_query
     query.answer()
     show_main_menu(query)
 
 
 def error(update, context: CallbackContext) -> None:
-    """ Обработчик ошибки """
+    """Обработчик ошибки"""
     print("Update:", update)
     print("Error:", context.error)
     update.message.reply_text("Ой, произошла ошибка..")

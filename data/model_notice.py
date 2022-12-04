@@ -8,28 +8,46 @@ from data.base import DictObject, exec_query
 
 
 def get_keywords(text: str) -> List[str]:
-    stemmer = Mystem()
-    result = []
-    for word in stemmer.analyze(text):
+    """Список ключевых слов в тексте"""
+
+    important = (
+        "A"  # Adjective, имя прилагательное
+        "ADV"  # Adverb, наречие
+        "NUM"  # Numeral, числительное
+        "S"  # Noun, имя существительное
+        "V"  # Verb, глагол
+    )
+
+    punctuation = ",=()|"
+    puncts_to_space = str.maketrans(punctuation, " " * len(punctuation))
+
+    result = set()
+    for word in Mystem().analyze(text):
         analysis = word.get("analysis")
         if analysis:
-            gr = analysis[0]["gr"]
-            gr = gr.translate(str.maketrans(",=(|)", "     "))
-            part, _ = gr.split(maxsplit=1)
-            if part in ("A", "ADV", "NUM", "S", "V"):
-                result.append(analysis["lex"])
+            parts = [variant["gr"] for variant in analysis]
+            parts = " ".join(parts)
+            parts = parts.translate(puncts_to_space)
+            parts = parts.split()
+            signs_importance = (p in important for p in parts)
+            if any(signs_importance):
+                result.add(analysis["lex"])
+
     return sorted(result)
 
 
 class Notice(BaseModel):
-    """ Информационное сообщение """
+    """Информационное сообщение"""
+
     id: int = 0
     title: str = ""
     message: str = ""
 
-    @classmethod
-    def create(cls, user_data: DictObject):
-        if isinstance(user_data['category'], int):
+    @staticmethod
+    def create(user_data: DictObject):
+        """Создать категорию"""
+
+        if isinstance(user_data["category"], int):
             query = """
                 DECLARE $category AS Uint64;
                 DECLARE $keywords AS JsonDocument;
@@ -40,28 +58,32 @@ class Notice(BaseModel):
                 VALUES ($id, $category, $keywords, $text, $title);
             """
             params = {
-                "$category": user_data['category'],
-                "$keywords": json.dumps(get_keywords(user_data['text'])),
-                "$text": user_data['text'],
-                "$title": user_data['title'],
+                "$category": user_data["category"],
+                "$keywords": json.dumps(get_keywords(user_data["text"])),
+                "$text": user_data["text"],
+                "$title": user_data["title"],
             }
             exec_query(query, params)
 
-    @classmethod
-    def get_list(cls, category: int) -> List['Notice']:
+    @staticmethod
+    def get_list(category: int) -> List["Notice"]:
+        """Получить список объявлений в категории"""
+
         query = """
             DECLARE $category AS Uint64;
             SELECT id, title, text
             FROM notices
             WHERE category == $category;
         """
-        params = {'$category': category}
+        params = {"$category": category}
         rows = exec_query(query, params)
-        return [cls(**row) for row in rows]
 
-    @classmethod
-    def find_by_keywords(cls, keywords: str) -> List['Notice']:
-        """ Список сообщений по запросу """
+        return [Notice(**row) for row in rows]
+
+    @staticmethod
+    def find_by_keywords(keywords: str) -> List["Notice"]:
+        """Список сообщений по запросу"""
+
         # keyword_list = sorted(set(keywords.lower().split()))
         query = """
             SELECT id, title, message
@@ -69,4 +91,4 @@ class Notice(BaseModel):
             ORDER BY distance;
         """
         rows = exec_query(query)
-        return [cls(**row) for row in rows]
+        return [Notice(**row) for row in rows]

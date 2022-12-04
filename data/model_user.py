@@ -1,65 +1,50 @@
-import json
-from typing import List
+from enum import Enum, auto
 
 from pydantic import BaseModel
 
 from data.base import exec_query
 
 
+class Role(Enum):
+    ADMIN = auto()
+    TUTOR = auto()
+    STUDENT = auto()
+
+
 class User(BaseModel):
-    """ Пользователь """
+    """Пользователь"""
+
     tg_id: int
     tg_username: str
     full_name: str
     name: str
     is_admin: bool
-    manage_on: List[int]
+    manage_on: set[int]
 
-    @classmethod
-    def get(cls, tg: int | str) -> 'User':
-        if isinstance(tg, int):
-            query = """
-                DECLARE $tg_id AS Uint64;
-                SELECT tg_id, tg_username, full_name, name, is_admin
-                FROM users
-                WHERE tg_id == $tg_id;
-            """
-            params = {"$tg_id": tg}
-            rows = exec_query(query, params)
-
-        elif isinstance(tg, str):
-            query = """
-                DECLARE $tg_username AS String;
-                SELECT tg_id, tg_username, full_name, name, is_admin
-                FROM users
-                WHERE tg_username == $tg_username;
-            """
-            params = {"$tg_username": tg.encode()}
-            rows = exec_query(query, params)
-
-        if rows:
-            return cls(**rows[0])
-
-    def add_group(self, group_id: int):
-        if not isinstance(self.manage_on, set):
-            self.manage_on = set()
-        self.manage_on.add(group_id)
+    @staticmethod
+    def get(tg: int) -> "User":
+        """Поиск пользователя в базе данных"""
 
         query = """
             DECLARE $tg_id AS Uint64;
-            DECLARE $manage_on AS Set<Uint64>;
-            UPDATE users
-            SET manage_on = $manage_on
+            SELECT tg_id, tg_username, full_name, name, is_admin
+            FROM users
             WHERE tg_id == $tg_id;
         """
-        params = {"$tg_id": self.id, "$manage_on": json.dumps(self.manage_on)}
+        params = {"$tg_id": tg}
+        rows = exec_query(query, params)
 
-        exec_query(query, params)
+        if not rows:
+            raise Exception("User not found")
 
-    def role(self) -> str:
+        return User(**rows[0])
+
+    def role(self) -> Role:
+        """Роль которую исполняет пользователь"""
+
         if self.is_admin:
-            return 'admin'
-        elif self.is_admin:  # TODO: куратор
-            return 'tutor'
+            return Role.ADMIN
+        elif self.manage_on:
+            return Role.TUTOR
         else:
-            return 'student'
+            return Role.STUDENT
