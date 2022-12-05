@@ -5,7 +5,7 @@ from telegram.ext import CallbackContext
 from telegram.ext import CallbackQueryHandler as CBQHandler
 from telegram.ext import CommandHandler, Dispatcher
 
-from models.user import User
+from models.user import get_user
 
 
 def register_handlers(disp: Dispatcher) -> None:
@@ -39,15 +39,10 @@ def show_main_menu(prev: Update | CallbackQuery) -> None:
 def start_cmd(update: Update, context: CallbackContext) -> None:
     """Команда start"""
     try:
-        user = update.effective_user
-        if not user:
-            raise RuntimeError
-        user = User.get(user.id)
-        if not user:
-            raise RuntimeError
+        user = get_user(update.effective_user.id)
         update.message.reply_text(f"Здравствуйте, {user.name}!")
         show_main_menu(update)
-    except RuntimeError:
+    except (AttributeError, RuntimeError):
         update.message.reply_text("Извините, но мы не знакомы.")
 
 

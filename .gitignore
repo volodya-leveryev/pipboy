@@ -3,6 +3,7 @@
 .vscode/
 
 # Data
+assets/
 *.json
 
 # Compilated
