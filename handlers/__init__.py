@@ -32,7 +32,7 @@ def user_required(handler):
     def wrapper(update, context):
         global current_user
         try:
-            current_user = find_user(update.effective_user.id)
+            current_user = find_user(update.effective_user.username)
         except (AttributeError, IndexError):
             update.message.reply_text("Извините, но мы не знакомы")
         return handler(update, context)

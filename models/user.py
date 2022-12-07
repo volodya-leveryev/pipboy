@@ -1,23 +1,20 @@
-import json
-
 from pydantic import BaseModel
 from telegram import InlineKeyboardButton as btn
 
 from database import exec_query
 from models.category import Category
-from models.group import Group
 from models.post import Post
 
 
 class User(BaseModel):
     """Пользователь"""
 
-    tg_id: int
-    tg_username: str
+    id: int
+    username: str
     full_name: str
     name: str
     is_admin: bool
-    manage_on: set[Group]
+    manage_on: list[int]
 
     def get_main_menu(self) -> list[list[btn]]:
         return [
@@ -58,18 +55,21 @@ class UserAdmin(UserTutor):
         return buttons
 
 
-def find_user(tg_id: int) -> User:
+def find_user(username: str) -> User:
     """Поиск пользователя в базе данных"""
 
     query = """
-        DECLARE $tg_id AS Uint64;
-        SELECT tg_id, tg_username, full_name, name, is_admin, manage_on
-        FROM users
-        WHERE tg_id == $tg_id;
+        DECLARE $username AS String;
+        SELECT
+            t1.id AS id, t1.username AS username, t1.full_name AS full_name,
+            t1.name AS name, t1.is_admin AS is_admin,
+            AGG_LIST_DISTINCT(t2.group) AS manage_on
+        FROM users AS t1 JOIN manage_on AS t2 ON t1.id == t2.user
+        WHERE t1.username == $username
+        GROUP BY t1.id, t1.username, t1.full_name, t1.name, t1.is_admin;
     """
-    params = {"$tg_id": tg_id}
+    params = {"$username": username.encode()}
     row = exec_query(query, params)[0].rows[0]
-    row["manage_on"] = set(json.loads(row["manage_on"]))
 
     if row["is_admin"]:
         return UserAdmin(**row)
