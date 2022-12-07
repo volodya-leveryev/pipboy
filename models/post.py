@@ -36,7 +36,7 @@ def get_keywords(text: str) -> List[str]:
     return sorted(result)
 
 
-class Notice(BaseModel):
+class Post(BaseModel):
     """Информационное сообщение"""
 
     id: int = 0
@@ -66,7 +66,7 @@ class Notice(BaseModel):
             exec_query(query, params)
 
     @staticmethod
-    def get_list(category: int) -> List["Notice"]:
+    def get_list(category: int) -> List["Post"]:
         """Получить список объявлений в категории"""
 
         query = """
@@ -78,10 +78,10 @@ class Notice(BaseModel):
         params = {"$category": category}
         rows = exec_query(query, params)
 
-        return [Notice(**row) for row in rows]
+        return [Post(**row) for row in rows]
 
     @staticmethod
-    def find_by_keywords(keywords: str) -> List["Notice"]:
+    def find_by_keywords(keywords: str) -> List["Post"]:
         """Список сообщений по запросу"""
 
         # keyword_list = sorted(set(keywords.lower().split()))
@@ -91,4 +91,4 @@ class Notice(BaseModel):
             ORDER BY distance;
         """
         rows = exec_query(query)
-        return [Notice(**row) for row in rows]
+        return [Post(**row) for row in rows]

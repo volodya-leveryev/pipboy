@@ -7,7 +7,7 @@ from queue import Queue
 from telegram import Bot, Update
 from telegram.ext import Dispatcher, Updater
 
-from database import DictObject, connection
+from database import database_connection
 from handlers import register_handlers
 from persistance import YdbPersistence
 
@@ -20,11 +20,11 @@ def get_token() -> str:
     return token
 
 
-def lambda_handler(event: DictObject, context: DictObject) -> DictObject:
+def lambda_handler(event: dict, context: dict) -> dict:
     """Точка входа в Yandex Cloud Functions (AWS Lambda)"""
     bot = Bot(token=get_token())
     message = json.loads(event["body"])
-    with connection():
+    with database_connection():
         dispatcher = Dispatcher(bot, Queue(), persistence=YdbPersistence())
         update = Update.de_json(message, bot)
         register_handlers(dispatcher)
@@ -34,7 +34,7 @@ def lambda_handler(event: DictObject, context: DictObject) -> DictObject:
 
 def main() -> None:
     """Точка входа для разработки"""
-    with connection():
+    with database_connection():
         updater = Updater(token=get_token(), persistence=YdbPersistence())
         register_handlers(updater.dispatcher)
         updater.start_polling()

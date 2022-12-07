@@ -1,5 +1,6 @@
 import json
-from typing import Optional, Tuple
+from collections import defaultdict
+from typing import DefaultDict, Optional, Tuple
 
 from telegram.ext import BasePersistence
 from telegram.ext.utils.types import ConversationDict
@@ -18,13 +19,13 @@ class YdbPersistence(BasePersistence):
             store_callback_data=False,
         )
 
-    def get_user_data(self) -> dict[int, dict]:
+    def get_user_data(self) -> DefaultDict[int, dict]:
         """Прочитать данные диалогов с пользователями"""
         query = """
             SELECT user_id, data FROM user_data;
         """
-        result = {}
-        for row in exec_query(query):
+        result = defaultdict(dict)
+        for row in exec_query(query)[0].rows:
             user_id = row["user_id"]
             result[user_id] = json.loads(row["data"])
         return result
@@ -78,7 +79,7 @@ class YdbPersistence(BasePersistence):
         """
         params = {"$name": name.encode()}
         result = {}
-        for row in exec_query(query, params):
+        for row in exec_query(query, params)[0].rows:
             conv_key = tuple(json.loads(row["key"]))
             result[conv_key] = row["state"]
         return result

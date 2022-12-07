@@ -1,6 +1,6 @@
 import os
 from contextlib import contextmanager
-from typing import Any, Dict, Iterator, List
+from typing import Any, Dict, List
 
 from ydb import Driver, SerializableReadWrite, Session, SessionPool, convert
 from ydb.iam import ServiceAccountCredentials
@@ -11,7 +11,7 @@ DictObject = Dict[str, Any]
 
 
 @contextmanager
-def connection() -> Iterator[None]:
+def database_connection():
     """Подключение к базе данных"""
     global _session_pool
 
@@ -34,7 +34,7 @@ def connection() -> Iterator[None]:
             yield
 
 
-def exec_query(query: str, params: DictObject = {}) -> List[DictObject]:
+def exec_query(query: str, params: DictObject = {}) -> List[convert.ResultSet]:
     """Выполнить запрос к базе данных"""
     global _session_pool
 
@@ -52,4 +52,4 @@ def exec_query(query: str, params: DictObject = {}) -> List[DictObject]:
     if result is None:
         raise Exception("Cannot execute query to database")
 
-    return result[0].rows
+    return result
