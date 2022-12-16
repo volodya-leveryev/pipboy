@@ -1,9 +1,46 @@
+from copy import deepcopy
 from pydantic import BaseModel
 from telegram import InlineKeyboardButton as btn
 
+# from models.post import Post
+from cache import DictObject, users
 from database import exec_query
 from models.category import Category
-from models.post import Post
+
+current_user: DictObject
+
+
+def get_main_menu() -> list[list[btn]]:
+    """Создать главное меню"""
+    global current_user
+
+    student_menu = [[]]
+    tutor_menu = deepcopy(student_menu)
+    # tutor_menu.append([btn("Разослать сообщение", callback_data="disp_msg")])
+    admin_menu = deepcopy(tutor_menu)
+    admin_menu.append([btn("Обновить объявления", callback_data="post_refresh")])
+
+    if current_user["admin"]:
+        return admin_menu
+    elif current_user["manage_on"]:
+        return tutor_menu
+    else:
+        return student_menu
+
+
+def user_required(handler):
+    """Декоратор для поиска пользователя в базе данных"""
+
+    def wrapper(update, context):
+        global current_user
+        try:
+            # current_user = find_user(update.effective_user.username)
+            current_user = users[update.effective_user.username]
+            return handler(update, context)
+        except (AttributeError, IndexError):
+            update.message.reply_text("Извините, но мы не знакомы")
+
+    return wrapper
 
 
 class User(BaseModel):
@@ -17,21 +54,22 @@ class User(BaseModel):
     manage_on: list[int]
 
     def get_main_menu(self) -> list[list[btn]]:
-        return [
-            [btn("Поиск объявления", callback_data="post_search")],
-            [btn("Категории объявлений", callback_data="post_list")],
-        ]
+        # return [
+        #     [btn("Поиск объявления", callback_data="post_search")],
+        #     [btn("Категории объявлений", callback_data="post_list")],
+        # ]
+        return []
 
     def get_cat_list(self) -> list[list[btn]]:
         buttons = [[btn("Назад", callback_data="main_menu")]]
         for c in Category.get_list():
-            buttons.append([btn(c.name, callback_data=f"cat_{c.id}")])
+            buttons.append([btn(c.name, callback_data=f"cat {c.id}")])
         return buttons
 
     def get_cat_menu(self, cat_id) -> list[list[btn]]:
         buttons = [[btn("Назад", callback_data="cat_list")]]
-        for n in Post.get_list(cat_id):
-            buttons.append([btn(n.title, callback_data=f"post_{n.id}")])
+        # for n in Post.get_list(cat_id):
+        #     buttons.append([btn(n.title, callback_data=f"post {n.id}")])
         return buttons
 
 
@@ -50,7 +88,7 @@ class UserAdmin(UserTutor):
 
     def get_cat_menu(self, cat_id) -> list[list[btn]]:
         buttons = super().get_cat_menu(cat_id)
-        post_new = btn("Создать объявление", callback_data=f"post_create_{cat_id}")
+        post_new = btn("Создать объявление", callback_data=f"post_create {cat_id}")
         buttons.append([post_new])
         return buttons
 

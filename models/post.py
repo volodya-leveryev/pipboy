@@ -1,39 +1,92 @@
 import json
-from typing import List
+import re
+from collections import Counter
+from typing import Iterable
 
 from pydantic import BaseModel
-from pymystem3 import Mystem
+from pymorphy2 import MorphAnalyzer
 
 from database import DictObject, exec_query
 
+stopwords: set = set()
+posts: dict = {}
 
-def get_keywords(text: str) -> List[str]:
-    """Список ключевых слов в тексте"""
+with open("posts.json", encoding="utf-8") as f:
+    posts = json.load(f)
 
-    important = (
-        "A"  # Adjective, имя прилагательное
-        "ADV"  # Adverb, наречие
-        "NUM"  # Numeral, числительное
-        "S"  # Noun, имя существительное
-        "V"  # Verb, глагол
-    )
 
-    punctuation = ",=()|"
-    puncts_to_space = str.maketrans(punctuation, " " * len(punctuation))
+def get_stopwords():
+    """Чтение списка незначимых слов из файла"""
+    global stopwords
+    if not stopwords:
+        with open("stopwords.txt") as f:
+            stopwords = set(f.read().split())
+    return stopwords
 
-    result = set()
-    for word in Mystem().analyze(text):
-        analysis = word.get("analysis")
-        if analysis:
-            parts = [variant["gr"] for variant in analysis]
-            parts = " ".join(parts)
-            parts = parts.translate(puncts_to_space)
-            parts = parts.split()
-            signs_importance = (p in important for p in parts)
-            if any(signs_importance):
-                result.add(analysis["lex"])
 
-    return sorted(result)
+def get_keywords(text: str) -> set[str]:
+    """Извлечение ключевых слов из текста"""
+    # Разбивка текста на слова
+    tokens = text.split()
+    # Приведение к нижнему регистру, замена ё на е
+    tokens = [token.lower().replace("ё", "e") for token in tokens]
+    # Очистка символов пунктуации
+    puncts = re.compile("[!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~–—«»№0-9]")
+    tokens = [puncts.sub("", token) for token in tokens]
+    # Приведение слов к основной форме
+    morph = MorphAnalyzer(lang="ru")
+    tokens = [morph.parse(token)[0].normal_form for token in tokens if token]
+    # Очистка незначимых слов
+    stopwords = get_stopwords()
+    tokens = [token for token in tokens if len(token) > 1 and token not in stopwords]
+    # Очистка повторов
+    return set(tokens)
+
+
+def find_posts(query: Iterable[str]) -> list[tuple[str, str]]:
+    """Поиск объявлений по ключевым словам"""
+    # Индексы объявлений по ключевым словам
+    post_indices = [i for token in query for i in posts["index"].get(token, [])]
+    # Количество повторов каждого индекса
+    post_indices = [item for item in Counter(post_indices).items()]
+    # Сортировка, чтобы сначала шли наиболее релевантные объявления
+    post_indices.sort(key=lambda i: -i[1])
+    # Возвращаем индексы объявлений
+    return [i for i, _ in post_indices]
+
+
+def refresh_posts():
+    """Обновление объявлений в базе данных"""
+    pass
+
+
+def create_post(title, text):
+    """Создать объявление"""
+
+    def get_value(p):
+        nonlocal post_id
+        kw_id = hash(p) + post_id + 2**63
+        return kw_id % 2**64, post_id, p
+
+    query = """
+        DECLARE $id AS Uint64;
+        DECLARE $title AS Utf8;
+        DECLARE $text AS Utf8;
+        UPSERT INTO posts (id, title, text)
+        VALUES ($id, $title, $text);
+    """
+    post_id = hash(title + text) + 2**63
+    params = {"$id": post_id, "$title": title, "$text": text}
+    exec_query(query, params)
+
+    keywords = get_keywords(text)
+    query = """
+        DECLARE $values AS List<Tuple<Uint64,Uint64,Utf8>>
+        UPSERT INTO keywords (id, post, keyword)
+        VALUES $values;
+    """
+    params = {"$values": [get_value(p) for p in keywords]}
+    exec_query(query, params)
 
 
 class Post(BaseModel):
@@ -66,7 +119,7 @@ class Post(BaseModel):
             exec_query(query, params)
 
     @staticmethod
-    def get_list(category: int) -> List["Post"]:
+    def get_list(category: int) -> list["Post"]:
         """Получить список объявлений в категории"""
 
         query = """
@@ -76,12 +129,12 @@ class Post(BaseModel):
             WHERE category == $category;
         """
         params = {"$category": category}
-        rows = exec_query(query, params)
+        rows = exec_query(query, params)[0].rows
 
         return [Post(**row) for row in rows]
 
     @staticmethod
-    def find_by_keywords(keywords: str) -> List["Post"]:
+    def find_by_keywords(keywords: str) -> list["Post"]:
         """Список сообщений по запросу"""
 
         # keyword_list = sorted(set(keywords.lower().split()))
@@ -90,5 +143,5 @@ class Post(BaseModel):
             FROM notice
             ORDER BY distance;
         """
-        rows = exec_query(query)
+        rows = exec_query(query)[0].rows
         return [Post(**row) for row in rows]

@@ -1,13 +1,12 @@
-import os
 from contextlib import contextmanager
-from typing import Any, Dict, List
 
-from ydb import Driver, SerializableReadWrite, Session, SessionPool, convert
+from ydb import Driver, SerializableReadWrite, Session, SessionPool
+from ydb.convert import ResultSet
 from ydb.iam import ServiceAccountCredentials
 
-_session_pool: SessionPool
+from cache import DictObject, config
 
-DictObject = Dict[str, Any]
+_session_pool: SessionPool
 
 
 @contextmanager
@@ -15,18 +14,16 @@ def database_connection():
     """Подключение к базе данных"""
     global _session_pool
 
-    filename = os.getenv("SA_KEY_FILE")
     credentials = None
-    if filename:
+    if filename := config["SA_KEY_FILE"]:
         credentials = ServiceAccountCredentials.from_file(filename)
 
-    params = {
-        "endpoint": os.getenv("YDB_ENDPOINT"),
-        "database": os.getenv("YDB_DATABASE"),
+    connection_params = {
+        "endpoint": config["YDB_ENDPOINT"],
+        "database": config["YDB_DATABASE"],
         "credentials": credentials,
     }
-    with Driver(**params) as driver:
-
+    with Driver(**connection_params) as driver:
         driver.wait(timeout=5, fail_fast=True)
 
         with SessionPool(driver) as session_pool:
@@ -34,11 +31,11 @@ def database_connection():
             yield
 
 
-def exec_query(query: str, params: DictObject = {}) -> List[convert.ResultSet]:
+def exec_query(query: str, params: DictObject = {}) -> list[ResultSet]:
     """Выполнить запрос к базе данных"""
     global _session_pool
 
-    def callee(session: Session) -> List[convert.ResultSet]:
+    def callee(session: Session) -> list[ResultSet]:
         nonlocal query, params
 
         if params:

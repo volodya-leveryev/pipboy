@@ -1,77 +1,95 @@
-from telegram import CallbackQuery, InlineKeyboardMarkup, Update
-from telegram.ext import CallbackContext
-from telegram.ext import CallbackQueryHandler as CBQHandler
-from telegram.ext import CommandHandler, Dispatcher, MessageHandler, Filters
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import CallbackContext, Dispatcher, Filters
+from telegram.ext.callbackqueryhandler import CallbackQueryHandler
+from telegram.ext.commandhandler import CommandHandler
+from telegram.ext.messagehandler import MessageHandler
 
-from models.user import User, find_user
-
-current_user: User
+from handlers import disp_msg
+from models.post import find_posts, get_keywords, posts
+from models.user import get_main_menu, user_required
 
 
 def register_handlers(disp: Dispatcher):
     """Регистрируем обработчики"""
 
     # Начало общения с пользователем
-    disp.add_handler(CommandHandler("start", start_cmd))
+    disp.add_handler(CommandHandler("start", main_menu))
 
     # Главное меню
-    disp.add_handler(CBQHandler(main_menu_cbq, pattern="^main_menu$"))
+    disp.add_handler(CallbackQueryHandler(main_menu, pattern="^main_menu$"))
 
-    # Объявления
-    # notices.register(dispatcher)
+    # Рассылка сообщений
+    disp.add_handler(disp_msg.handler)
+
+    # Поиск объявлений
+    disp.add_handler(MessageHandler(~Filters.command, post_search))
+    disp.add_handler(CallbackQueryHandler(post_show, pattern=r"^post_show\ "))
 
     # Необработанные сообщения / команды / нажатия
     disp.add_handler(MessageHandler(Filters.all, not_implemented))
-    disp.add_handler(CBQHandler(not_implemented))
+    disp.add_handler(CallbackQueryHandler(not_implemented))
 
     # Обработка ошибки
     disp.add_error_handler(error)
 
-
-def user_required(handler):
-    def wrapper(update, context):
-        global current_user
-        try:
-            current_user = find_user(update.effective_user.username)
-        except (AttributeError, IndexError):
-            update.message.reply_text("Извините, но мы не знакомы")
-        return handler(update, context)
-
-    return wrapper
+    # Меню команд в кнопке
+    disp.bot.set_my_commands([])
 
 
-def show_main_menu(prev: Update | CallbackQuery):
+@user_required
+def main_menu(update: Update, _context: CallbackContext):
     """Показать главное меню"""
-
     msg = "Главное меню:"
-    menu = InlineKeyboardMarkup(current_user.get_main_menu())
-
-    if isinstance(prev, Update):
-        prev.message.reply_text(msg, reply_markup=menu)
-    elif isinstance(prev, CallbackQuery):
-        prev.edit_message_text(msg, reply_markup=menu)
-
-
-@user_required
-def start_cmd(update: Update, _context: CallbackContext):
-    """Команда start"""
-    if current_user:
-        update.message.reply_text(f"Здравствуйте, {current_user.name}!")
-    show_main_menu(update)
+    kbd = InlineKeyboardMarkup(get_main_menu())
+    if query := update.callback_query:
+        query.answer()
+        query.edit_message_text(msg, reply_markup=kbd)
+    else:
+        update.message.reply_text(msg, reply_markup=kbd)
 
 
-@user_required
-def main_menu_cbq(update: Update, _context: CallbackContext):
-    """Показать главное меню"""
+def post_search(update: Update, _context: CallbackContext):
+    """Найти объявление по ключевым словам"""
+    keywords = get_keywords(update.message.text)
+    results = find_posts(keywords)
+    if results:
+        if len(results) == 1:
+            i = results[0]
+            title = posts["titles"][i]
+            text = posts["posts"][i]
+            update.message.reply_text(f"{title}\n{text}")
+        else:
+            buttons = [
+                [
+                    InlineKeyboardButton(
+                        posts["titles"][i], callback_data=f"post_show {i}"
+                    )
+                ]
+                for i in results
+            ]
+            kbd = InlineKeyboardMarkup(buttons)
+            update.message.reply_text("Выберите сообщение:", reply_markup=kbd)
+    else:
+        update.message.reply_text(
+            "Извините, но ничего не найдено. Попробуйте изменить запрос."
+        )
+
+
+def post_show(update: Update, _context: CallbackContext):
+    """Показ выбранного объявления"""
     query = update.callback_query
     query.answer()
-    show_main_menu(query)
+    _, i = query.data.split(maxsplit=1)
+    i = int(i)
+    title, text = posts["titles"][i], posts["posts"][i]
+    query.edit_message_text(f"{title}\n{text}")
 
 
 def not_implemented(update: Update, _context: CallbackContext):
+    """Обработчик команд и сообщений не обработанных штатным образом"""
     msg = "Извините, я вас не понимаю"
     if query := update.callback_query:
-        query.answer
+        query.answer()
         query.edit_message_text(msg)
     else:
         update.message.reply_text(msg)
@@ -81,4 +99,9 @@ def error(update, context: CallbackContext):
     """Обработчик ошибки"""
     print("Update:", update)
     print("Error:", context.error)
-    update.message.reply_text("Ой, произошла ошибка..")
+    msg = "Ой, произошла ошибка.."
+    if query := update.callback_query:
+        query.answer()
+        query.edit_message_text(msg)
+    else:
+        update.message.reply_text(msg)
