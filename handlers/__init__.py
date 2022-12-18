@@ -5,10 +5,9 @@ from telegram.ext.callbackqueryhandler import CallbackQueryHandler
 from telegram.ext.commandhandler import CommandHandler
 from telegram.ext.messagehandler import MessageHandler
 
-from handlers import disp_msg
 from utils.decorators import user_required
 from models.post import find_posts, get_keywords, posts
-from models.user import get_main_menu
+from models.user import get_user
 
 
 def register_handlers(disp: Dispatcher):
@@ -21,7 +20,7 @@ def register_handlers(disp: Dispatcher):
     disp.add_handler(CallbackQueryHandler(main_menu, pattern="^main_menu$"))
 
     # Рассылка сообщений
-    disp.add_handler(disp_msg.handler)
+    # disp.add_handler(disp_msg.handler)
 
     # Поиск объявлений
     disp.add_handler(MessageHandler(~Filters.command, post_search))
@@ -42,7 +41,7 @@ def register_handlers(disp: Dispatcher):
 def main_menu(update: Update, _context: CallbackContext):
     """Показать главное меню"""
     msg = "Главное меню:"
-    kbd = InlineKeyboardMarkup(get_main_menu())
+    kbd = InlineKeyboardMarkup(get_user().get_main_menu())
     if query := update.callback_query:
         query.answer()
         query.edit_message_text(msg, reply_markup=kbd)
