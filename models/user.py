@@ -2,6 +2,7 @@ from typing import Optional, Union, overload
 
 from telegram import InlineKeyboardButton as btn, User as TgUser
 
+from utils.config import config
 from utils.database import exec_query
 
 _current_user: "User"
@@ -12,7 +13,6 @@ class User:
 
     def __init__(self, **kwargs) -> None:
         self.id: int = kwargs["id"]
-        self.bot_id: int = kwargs["bot_id"]
         self.user_id: int = kwargs["user_id"]
         self.username: str = kwargs["username"]
         self.full_name: str = kwargs["full_name"]
@@ -89,41 +89,43 @@ def create_user(obj: dict) -> User:
     return User(**obj)
 
 
-def create_database_user(bot_id: int, tg_user: TgUser) -> Optional[User]:
+def create_database_user(tg_user: TgUser) -> Optional[User]:
     params = {
-        "$bot_id": bot_id,
+        "$bot_id": config["BOT_ID"],
         "$user_id": tg_user.id,
+        "$full_name": tg_user.full_name,
         "$username": (tg_user.username or "").encode(),
     }
     query = """
         DECLARE $bot_id AS Uint64;
         DECLARE $user_id AS Uint64;
+        DECLARE $full_name AS Utf8;
         DECLARE $username AS String;
         $id = (SELECT COUNT(*) FROM users);
-        INSERT INTO users (id, bot_id, user_id, username)
-        VALUES ($id, $bot_id, $user_id, $username);
+        INSERT INTO users (id, bot_id, user_id, full_name, username)
+        VALUES ($id, $bot_id, $user_id, $full_name, $username);
     """
     exec_query(query, params)
-    return find_user(params["user_id"], params["bot_id"])
+    return find_user(tg_user.id)
 
 
 @overload
-def find_user(user: int, bot: int) -> Optional[User]:
+def find_user(user: int) -> Optional[User]:
     ...
 
 
 @overload
-def find_user(user: bytes, bot: int = 0) -> Optional[User]:
+def find_user(user: bytes) -> Optional[User]:
     ...
 
 
-def find_user(user: Union[int, bytes], bot: int = 0) -> Optional[User]:
-    """Поиск пользователя по идентификатору"""
+def find_user(user: Union[int, bytes]) -> Optional[User]:
+    """Поиск пользователя"""
 
-    if bot:
+    if isinstance(user, int):
         declaration = "DECLARE $bot_id AS Uint64; DECLARE $user_id AS Uint64;"
         condition = "t1.bot_id == $bot_id AND t1.user_id == $user_id"
-        params = {"$bot_id": bot, "$user_id": user}
+        params = {"$bot_id": config["BOT_ID"], "$user_id": user}
     else:
         declaration = "DECLARE $username AS String;"
         condition = "t1.username == $username"
@@ -131,14 +133,13 @@ def find_user(user: Union[int, bytes], bot: int = 0) -> Optional[User]:
     query = f"""
         {declaration}
         SELECT
-            id, bot_id, user_id, username, full_name, name,
+            id, user_id, username, full_name, name,
             is_admin, is_tutor, is_student,
             AGG_LIST_DISTINCT(t2.group) AS manage_on
         FROM users AS t1 LEFT JOIN manage_on AS t2 ON t1.user_id == t2.user
         WHERE {condition}
         GROUP BY
             t1.id AS id,
-            t1.bot_id AS bot_id,
             t1.user_id AS user_id,
             t1.username AS username,
             t1.full_name AS full_name,

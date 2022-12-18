@@ -5,6 +5,7 @@ from telegram.ext.callbackqueryhandler import CallbackQueryHandler
 from telegram.ext.commandhandler import CommandHandler
 from telegram.ext.messagehandler import MessageHandler
 
+from utils.config import config
 from utils.decorators import user_required
 from models.post import find_posts, get_keywords, posts
 from models.user import get_user
@@ -31,7 +32,8 @@ def register_handlers(disp: Dispatcher):
     disp.add_handler(CallbackQueryHandler(not_implemented))
 
     # Обработка ошибки
-    disp.add_error_handler(error)
+    if config.get("BOT_ENV") != "development":
+        disp.add_error_handler(error)
 
     # Меню команд в кнопке
     disp.bot.set_my_commands([])

@@ -13,7 +13,7 @@ def user_required(callback: Callable[[Update, CallbackContext], Any]):
             return
 
         # Поиск пользователя по идентификатору
-        if user := find_user(update.effective_user.id, context.bot.id):
+        if user := find_user(update.effective_user.id):
             set_user(user)
             return callback(update, context)
 
@@ -25,7 +25,8 @@ def user_required(callback: Callable[[Update, CallbackContext], Any]):
                 return callback(update, context)
 
         # Создаем пользователя
-        if user := create_database_user(context.bot.id, update.effective_user):
+        if user := create_database_user(update.effective_user):
+            set_user(user)
             return callback(update, context)
 
     return wrapper
