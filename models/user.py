@@ -7,7 +7,7 @@ from telegram import InlineKeyboardButton as btn
 # from models.post import Post
 # from cache import DictObject, users
 # from models.category import Category
-from database import exec_query
+from utils.database import exec_query
 
 
 class User(BaseModel):
@@ -67,7 +67,7 @@ def find_user(bot_id: int, user_id: int) -> Optional[User]:
         GROUP BY t1.user_id, t1.chat_id, t1.username, t1.full_name, t1.admin;
     """
     params = {"$bot_id": bot_id, "$user_id": user_id}
-    rows = exec_query(query, params).rows
+    rows = exec_query(query, params)
     if rows:
         return create_user(rows[0])
 

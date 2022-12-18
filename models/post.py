@@ -6,7 +6,7 @@ from typing import Iterable
 from pydantic import BaseModel
 from pymorphy2 import MorphAnalyzer
 
-from database import DictObject, exec_query
+from utils.database import DictObject, exec_query
 
 stopwords: set = set()
 posts: dict = {}
@@ -129,9 +129,8 @@ class Post(BaseModel):
             WHERE category == $category;
         """
         params = {"$category": category}
-        rows = exec_query(query, params).rows
 
-        return [Post(**row) for row in rows]
+        return [Post(**row) for row in exec_query(query, params)]
 
     @staticmethod
     def find_by_keywords(keywords: str) -> list["Post"]:
@@ -143,5 +142,4 @@ class Post(BaseModel):
             FROM notice
             ORDER BY distance;
         """
-        rows = exec_query(query).rows
-        return [Post(**row) for row in rows]
+        return [Post(**row) for row in exec_query(query)]

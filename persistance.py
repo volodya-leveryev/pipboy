@@ -5,7 +5,7 @@ from typing import DefaultDict, Optional
 from telegram.ext import BasePersistence
 from telegram.ext.utils.types import ConversationDict
 
-from database import exec_query
+from utils.database import exec_query
 
 
 class YdbPersistence(BasePersistence):
@@ -25,7 +25,7 @@ class YdbPersistence(BasePersistence):
             SELECT user_id, data FROM user_data;
         """
         result = defaultdict(dict)
-        for row in exec_query(query).rows:
+        for row in exec_query(query):
             user_id = row["user_id"]
             result[user_id] = json.loads(row["data"])
         return result
@@ -78,7 +78,7 @@ class YdbPersistence(BasePersistence):
         """
         params = {"$name": name.encode()}
         result = {}
-        for row in exec_query(query, params).rows:
+        for row in exec_query(query, params):
             conv_key = tuple(json.loads(row["key"]))
             result[conv_key] = row["state"]
         return result

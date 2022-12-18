@@ -7,7 +7,7 @@ from telegram import Bot, Update
 from telegram.ext import Dispatcher, Updater
 
 from utils.config import config
-from database import database_connection
+from utils.database import database_connection
 from handlers import register_handlers
 from persistance import YdbPersistence
 

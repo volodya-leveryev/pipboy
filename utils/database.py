@@ -31,7 +31,7 @@ def database_connection():
             yield
 
 
-def exec_query(query: str, params: Optional[DictObject] = None) -> Optional[ResultSet]:
+def exec_query(query: str, params: Optional[DictObject] = None) -> list[DictObject]:
     """Выполнить запрос к базе данных"""
     global _session_pool
 
@@ -45,6 +45,5 @@ def exec_query(query: str, params: Optional[DictObject] = None) -> Optional[Resu
         transaction = session.transaction(tx_mode)
         return transaction.execute(query, params, commit_tx=True)
 
-    result = _session_pool.retry_operation_sync(callee)
-    if result:
-        return result[0]
+    results: Optional[list[ResultSet]] = _session_pool.retry_operation_sync(callee)
+    return results[0].rows if results else []
