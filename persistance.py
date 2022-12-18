@@ -25,7 +25,7 @@ class YdbPersistence(BasePersistence):
             SELECT user_id, data FROM user_data;
         """
         result = defaultdict(dict)
-        for row in exec_query(query)[0].rows:
+        for row in exec_query(query).rows:
             user_id = row["user_id"]
             result[user_id] = json.loads(row["data"])
         return result
@@ -78,7 +78,7 @@ class YdbPersistence(BasePersistence):
         """
         params = {"$name": name.encode()}
         result = {}
-        for row in exec_query(query, params)[0].rows:
+        for row in exec_query(query, params).rows:
             conv_key = tuple(json.loads(row["key"]))
             result[conv_key] = row["state"]
         return result

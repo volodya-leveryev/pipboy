@@ -1,12 +1,14 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import InlineKeyboardMarkup, Update
+from telegram.inline.inlinekeyboardbutton import InlineKeyboardButton as btn
 from telegram.ext import CallbackContext, Dispatcher, Filters
 from telegram.ext.callbackqueryhandler import CallbackQueryHandler
 from telegram.ext.commandhandler import CommandHandler
 from telegram.ext.messagehandler import MessageHandler
 
 from handlers import disp_msg
+from handlers.utils import user_required
 from models.post import find_posts, get_keywords, posts
-from models.user import get_main_menu, user_required
+from models.user import get_main_menu
 
 
 def register_handlers(disp: Dispatcher):
@@ -60,11 +62,7 @@ def post_search(update: Update, _context: CallbackContext):
             update.message.reply_text(f"{title}\n{text}")
         else:
             buttons = [
-                [
-                    InlineKeyboardButton(
-                        posts["titles"][i], callback_data=f"post_show {i}"
-                    )
-                ]
+                [btn(posts["titles"][i], callback_data=f"post_show {i}")]
                 for i in results
             ]
             kbd = InlineKeyboardMarkup(buttons)

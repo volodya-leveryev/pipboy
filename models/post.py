@@ -129,7 +129,7 @@ class Post(BaseModel):
             WHERE category == $category;
         """
         params = {"$category": category}
-        rows = exec_query(query, params)[0].rows
+        rows = exec_query(query, params).rows
 
         return [Post(**row) for row in rows]
 
@@ -143,5 +143,5 @@ class Post(BaseModel):
             FROM notice
             ORDER BY distance;
         """
-        rows = exec_query(query)[0].rows
+        rows = exec_query(query).rows
         return [Post(**row) for row in rows]

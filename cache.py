@@ -1,16 +1,10 @@
 import json
-import os
 from typing import Any
 
 # from models.post import get_keywords
+from utils.config import config
 
 DictObject = dict[str, Any]
-
-_config_file = "config_dev.json"
-if os.getenv("BOT_ENV") == "PRODUCTION":
-    _config_file = "config.json"
-with open(_config_file, encoding="utf-8") as f:
-    config = json.load(f)
 
 
 def get_google_spreadsheet_values(spreadsheet_id):
