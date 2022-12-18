@@ -6,7 +6,7 @@ from telegram.ext.commandhandler import CommandHandler
 from telegram.ext.messagehandler import MessageHandler
 
 from handlers import disp_msg
-from handlers.utils import user_required
+from utils.decorators import user_required
 from models.post import find_posts, get_keywords, posts
 from models.user import get_main_menu
 
