@@ -6,10 +6,10 @@ from queue import Queue
 from telegram import Bot, Update
 from telegram.ext import Dispatcher, Updater
 
+from handlers import register_handlers
 from utils.config import config
 from utils.database import database_connection
-from handlers import register_handlers
-from persistance import YdbPersistence
+from utils.persistance import YdbPersistence
 
 
 def lambda_handler(event: dict, _context: dict) -> dict:
