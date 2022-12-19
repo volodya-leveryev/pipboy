@@ -42,7 +42,7 @@ def register_handlers(disp: Dispatcher):
 @user_required
 def main_menu(update: Update, _context: CallbackContext):
     """Показать главное меню"""
-    msg = "Главное меню:"
+    msg = "Для поиска по объявлениям напишите мне что вы ищете"
     kbd = InlineKeyboardMarkup(get_user().get_main_menu())
     if query := update.callback_query:
         query.answer()

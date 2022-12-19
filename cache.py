@@ -1,10 +1,7 @@
-import json
-from typing import Any
+# import json
 
 # from models.post import get_keywords
-from utils.config import config
-
-DictObject = dict[str, Any]
+# from utils.config import config
 
 
 def get_google_spreadsheet_values(spreadsheet_id):
@@ -35,31 +32,8 @@ def get_google_spreadsheet_values(spreadsheet_id):
 #     return posts
 
 
-def refresh_users():
-    """Обновить кэш пользователей"""
-    rows = get_google_spreadsheet_values(config["USERS"])
-    users = {
-        row[0]: {
-            "full_name": row[1],
-            "name": row[2],
-            "admin": row[3] == "TRUE",
-            "member_of": row[4].split(),
-            "manage_on": row[5].split(),
-        }
-        for row in rows[1:]
-    }
-    with open("users.json", "w", encoding="utf-8") as f:
-        json.dump(users, f, ensure_ascii=False)
-    return users
-
-
-if __name__ == "__main__":
-    # posts = refresh_posts()
-    users = refresh_users()
-
-else:
-    # with open("posts.json", encoding="utf-8") as f:
-    #     posts = json.load(f)
-
-    with open("users.json", encoding="utf-8") as f:
-        users = json.load(f)
+# if __name__ == "__main__":
+#     posts = refresh_posts()
+# else:
+#     with open("posts.json", encoding="utf-8") as f:
+#         posts = json.load(f)
