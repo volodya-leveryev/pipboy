@@ -115,21 +115,24 @@ def find_user(user: int) -> Optional[User]:
 
 
 @overload
-def find_user(user: bytes) -> Optional[User]:
+def find_user(user: str) -> Optional[User]:
     ...
 
 
-def find_user(user: Union[int, bytes]) -> Optional[User]:
+def find_user(user: Union[int, str]) -> Optional[User]:
     """Поиск пользователя"""
 
+    condition = "t1.bot_id == $bot_id"
+    declaration = "DECLARE $bot_id AS Uint64;"
+    params = {"$bot_id": config["BOT_ID"]}
     if isinstance(user, int):
-        declaration = "DECLARE $bot_id AS Uint64; DECLARE $user_id AS Uint64;"
-        condition = "t1.bot_id == $bot_id AND t1.user_id == $user_id"
-        params = {"$bot_id": config["BOT_ID"], "$user_id": user}
+        declaration += " DECLARE $user_id AS Uint64;"
+        condition += " AND t1.user_id == $user_id"
+        params["$user_id"] = user
     else:
-        declaration = "DECLARE $username AS String;"
-        condition = "t1.username == $username"
-        params = {"$username": user}
+        declaration += "DECLARE $username AS String;"
+        condition += " AND t1.username == $username"
+        params["$username"] = user.encode()
     query = f"""
         {declaration}
         SELECT

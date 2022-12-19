@@ -19,7 +19,7 @@ def user_required(callback: Callable[[Update, CallbackContext], Any]):
 
         # Поиск пользователя по нику
         if username := update.effective_user.username:
-            user = find_user(username.encode())
+            user = find_user(username)
             if user:
                 set_user(user)
                 return callback(update, context)

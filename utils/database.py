@@ -1,12 +1,13 @@
 from contextlib import contextmanager
-from typing import Optional
+from typing import Any, Optional, TypeVar
 
 from ydb import Driver, SerializableReadWrite, Session, SessionPool
 from ydb.convert import ResultSet
 from ydb.iam import ServiceAccountCredentials
 
-from cache import DictObject
 from utils.config import config
+
+DictObject = TypeVar("DictObject", bound=dict[str, Any])
 
 _session_pool: SessionPool
 

@@ -43,11 +43,14 @@ def register_handlers(disp: Dispatcher):
 def main_menu(update: Update, _context: CallbackContext):
     """Показать главное меню"""
     msg = "Для поиска по объявлениям напишите мне что вы ищете"
-    kbd = InlineKeyboardMarkup(get_user().get_main_menu())
+    user = get_user()
+    kbd = InlineKeyboardMarkup(user.get_main_menu())
     if query := update.callback_query:
         query.answer()
         query.edit_message_text(msg, reply_markup=kbd)
     else:
+        name = user.name or user.full_name
+        _context.bot.send_message(user.user_id, f"Здравствуйте {name}!")
         update.message.reply_text(msg, reply_markup=kbd)
 
 
