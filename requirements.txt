@@ -1,5 +1,5 @@
 gspread==5.7.2
-pydantic==1.10.2
+pydantic
 pymorphy2==0.9.1
 python-telegram-bot==13.15
 yandexcloud==0.192.0
